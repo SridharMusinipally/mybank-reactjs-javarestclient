@@ -1,6 +1,7 @@
 package com.mybank.account.transactions.service;
 
 import com.mybank.account.transactions.model.AccountDetails;
+import com.mybank.account.transactions.model.AccountTransactionsRpt;
 
 import java.util.Date;
 

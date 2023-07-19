@@ -5,13 +5,9 @@ import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
+import org.springframework.http.*;
 
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpHeaders;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -26,12 +22,9 @@ import java.util.List;
 public class AccountServiceImpl implements AccountService{
 
     @Autowired
-    RestTemplate restTemplate;
+    AccountTransactionsService accountTransactionsService;
 
-    @Value("${mybank.transactions.api.endpoint}")
-    String myBankTransactionEndpoint;
-
-//    Only for testing
+    //    Only for testing with stub data
 //    @Value("${mybank.stub.transactionsapi}")
 //    boolean myBankStubTransactionsapi;
 
@@ -44,45 +37,76 @@ public class AccountServiceImpl implements AccountService{
 //        System.out.println("Cumulative balance:" + cumulativeBalance);
 //    }
 
+    private AccountTransactionsBalanceCalculator loadTransactionsResponse(AccountTransactionsRpt accountTransactionsRpt){
+        AccountTransactionsBalanceCalculator accountTransactionsBalanceCalculator = new AccountTransactionsBalanceCalculator();
+        accountTransactionsBalanceCalculator.setAccountNumber(accountTransactionsRpt.getAccountNumber());
+        accountTransactionsBalanceCalculator.setOpeningBalance(accountTransactionsRpt.getOpeningBalance());
+        accountTransactionsBalanceCalculator.setFromDate(accountTransactionsRpt.getFromDate());
+        accountTransactionsBalanceCalculator.setUpToDate(accountTransactionsRpt.getUpToDate());
+        accountTransactionsBalanceCalculator.setAccountTransactionsList(accountTransactionsRpt.getAccountTransactionsList());
+        return accountTransactionsBalanceCalculator;
+    }
+
+
+
     @Override
     public AccountDetails getMonthlyBalance(String aAccountNumber, String asOfDate) throws Exception{
         System.out.println("From AccountServiceImpl::getMonthlyBalance");
-        return getBankTransactionsAndCalculate(aAccountNumber, asOfDate, "Monthly");
+        Date aAsOfDateObj=new SimpleDateFormat("dd-MM-yyyy").parse(asOfDate);
+
+        LocalDate aAsOfLocalDateObj = aAsOfDateObj.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+
+        LocalDate firstOfThatMonth = aAsOfLocalDateObj.withDayOfMonth(1);
+        AccountTransactionsRpt accountTransactionsRpt = null;
+
+//    Only for testing with stub data
+//if(myBankStubTransactionsapi) {
+//    accountTransactionsRpt = getMonthlyTransactionsTestData(aAccountNumber, asOfDate);
+//}else {
+    accountTransactionsRpt = accountTransactionsService.getAccountTransactions(aAccountNumber, firstOfThatMonth.toString(), asOfDate);
+//}
+
+        AccountTransactionsBalanceCalculator accountTransactionsBalanceCalculator = loadTransactionsResponse(accountTransactionsRpt);
+
+        AccountDetails monthlyAccountDetails = new MonthlyAccountDetails();
+        monthlyAccountDetails.setAccountNumber(aAccountNumber);
+        monthlyAccountDetails.setAsOfDate(aAsOfLocalDateObj.toString());
+
+        // In Euros
+        ((MonthlyAccountDetails)monthlyAccountDetails).setMonthlyBalance(accountTransactionsBalanceCalculator.calculateBalance());
+
+        return monthlyAccountDetails;
     }
 
     @Override
-    public AccountDetails getCumulativeBalance(String aAccountNumber, String asOfDate) throws Exception{
+    public AccountDetails getCumulativeBalance(String aAccountNumber, String fromDate) throws Exception{
         System.out.println("From AccountServiceImpl::getCumulativeBalance");
-        return getBankTransactionsAndCalculate(aAccountNumber, asOfDate, "Cumulative");
+        AccountTransactionsRpt accountTransactionsRpt = null;
+
+//    Only for testing with stub data
+//if(myBankStubTransactionsapi) {
+//    accountTransactionsRpt = getCumulativeTransactionsTestData(aAccountNumber, fromDate);
+//}else {
+    accountTransactionsRpt = accountTransactionsService.getAccountTransactions(aAccountNumber, fromDate.toString(), new Date().toString());
+//}
+
+        AccountTransactionsBalanceCalculator accountTransactionsBalanceCalculator = loadTransactionsResponse(accountTransactionsRpt);
+
+        AccountDetails cumulativeAccountDetails = new CumulativeAccountDetails();
+        cumulativeAccountDetails.setAccountNumber(aAccountNumber);
+        cumulativeAccountDetails.setAsOfDate(fromDate.toString());
+
+        // In Euros
+        ((CumulativeAccountDetails)cumulativeAccountDetails).setCumulativeBalance((accountTransactionsBalanceCalculator.calculateBalance()));
+        return cumulativeAccountDetails;
     }
 
-    /*
-        Points to consume the API −
-        Autowired the Rest Template Object.
-        Use HttpHeaders to set the Request Headers.
-        Use HttpEntity to wrap the request object.
-        Provide the URL, HttpMethod, and Return type for Exchange() method.
-    */
-    public AccountDetails getBankTransactionsAndCalculate(String aAccountNumber, String asOfDate, String typeOfTransactions) throws Exception{
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        HttpEntity<String> entity = new HttpEntity<String>(headers);
 
-        //If we want to test via the stub data, then we skip the actual API call and use the test data instead.
-//        if(!myBankStubTransactionsapi) {
-            return restTemplate.exchange(myBankTransactionEndpoint + "/" + aAccountNumber + "/" + asOfDate, HttpMethod.GET, entity, AccountDetails.class).getBody();
-//        }
-//        else {
-//            if (typeOfTransactions.equals("Monthly")) {
-//                return getMonthlyTransactionsTestData(aAccountNumber, asOfDate);
-//            } else {
-//                return getCumulativeTransactionsTestData(aAccountNumber, asOfDate);
-//            }
-//        }
-    }
 
-//    Only for testing
-//    private AccountDetails getMonthlyTransactionsTestData(String aAccountNumber, String asOfDate) throws Exception{
+    //    Only for testing with stub data
+//    private AccountTransactionsRpt getMonthlyTransactionsTestData(String aAccountNumber, String asOfDate) throws Exception{
 //
 //        AccountTransactionsRpt accountTransactionsRpt = new AccountTransactionsRpt();
 //        // This is the opening balance at the beginning of that month
@@ -118,21 +142,11 @@ public class AccountServiceImpl implements AccountService{
 //        accountTransactionsList.add(accountTransaction3);
 //
 //        accountTransactionsRpt.setAccountTransactionsList(accountTransactionsList);
-//        int monthlyBalance = accountTransactionsRpt.calculateBalance();
-//
-//
-//        AccountDetails monthlyAccountDetails = new MonthlyAccountDetails();
-//        monthlyAccountDetails.setAccountNumber(aAccountNumber);
-//
-//        //Up to last date of that month - showing the date entered for the sake of simplicity
-//        monthlyAccountDetails.setAsOfDate(aAsOfLocalDateObj.toString());
-//
-//        // In Euros
-//        ((MonthlyAccountDetails)monthlyAccountDetails).setMonthlyBalance(monthlyBalance);
-//        return monthlyAccountDetails;
+//        return accountTransactionsRpt;
 //    }
-//
-//    private AccountDetails getCumulativeTransactionsTestData(String aAccountNumber, String fromDate){
+
+    //    Only for testing with stub data
+//    private AccountTransactionsRpt getCumulativeTransactionsTestData(String aAccountNumber, String fromDate){
 //
 //        AccountTransactionsRpt accountTransactionsRpt = new AccountTransactionsRpt();
 //        // This is the opening balance at the time from when the cumulative balance is to be calculated
@@ -140,11 +154,6 @@ public class AccountServiceImpl implements AccountService{
 //        accountTransactionsRpt.setAccountNumber(aAccountNumber);
 //        // setting from date as the account opening date
 //        accountTransactionsRpt.setFromDate(fromDate);
-//
-//
-//        AccountDetails cumulativeAccountDetails = new CumulativeAccountDetails();
-//        cumulativeAccountDetails.setAccountNumber(aAccountNumber);
-//        cumulativeAccountDetails.setAsOfDate(fromDate.toString());
 //        accountTransactionsRpt.setUpToDate(new Date().toString());
 //
 //        // load test transactions which would ideally come from the 3rd party API
@@ -164,12 +173,8 @@ public class AccountServiceImpl implements AccountService{
 //        accountTransaction3.setTransactionAmount(60000);
 //        accountTransactionsList.add(accountTransaction3);
 //        accountTransactionsRpt.setAccountTransactionsList(accountTransactionsList);
-//        int cumulativeBalance = accountTransactionsRpt.calculateBalance();
 //
-//        // In Euros
-//        ((CumulativeAccountDetails)cumulativeAccountDetails).setCumulativeBalance(cumulativeBalance);
-//
-//        return cumulativeAccountDetails;
+//        return accountTransactionsRpt;
 //    }
 }
 

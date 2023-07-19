@@ -1,5 +1,6 @@
 package com.mybank.account.transactions.model;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -7,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Iterator;
 
-@Setter
-@Getter
+@Setter(AccessLevel.PUBLIC)
+@Getter(AccessLevel.PUBLIC)
 public class AccountTransactionsRpt {
 
     // This could be the opening balance of the month or the initial balance from when the balance is to be calculated based on the type of API being accessed.
@@ -25,19 +26,6 @@ public class AccountTransactionsRpt {
     List<AccountTransaction> accountTransactionsList = new ArrayList<AccountTransaction>();
 
     public int calculateBalance(){
-        int calculatedBalance = 0;
-        calculatedBalance = openingBalance;
-        Iterator iterator = accountTransactionsList.iterator();
-        AccountTransaction accountTransaction = null;
-        while(iterator.hasNext()){
-            accountTransaction = (AccountTransaction)iterator.next();
-            if(accountTransaction.getTransactionType().equals("CR")){
-                calculatedBalance += accountTransaction.getTransactionAmount();
-            } else {
-                calculatedBalance -= accountTransaction.getTransactionAmount();
-            }
-        }
-
-        return calculatedBalance;
+        return openingBalance;
     }
 }

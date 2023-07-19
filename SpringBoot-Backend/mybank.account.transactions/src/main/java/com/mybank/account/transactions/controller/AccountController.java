@@ -31,6 +31,7 @@ public class AccountController {
             return new ResponseEntity(monthlyAccountDetails, HttpStatus.OK);
         }
         catch(Exception e){
+            e.printStackTrace();
             log.error("Exception encountered in AccountController::getMonthlyBalance():", e.getClass().getName(), e.getMessage());
             return new ResponseEntity<>(monthlyAccountDetails, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -51,6 +52,7 @@ public class AccountController {
             return new ResponseEntity(cumulativeAccountDetails, HttpStatus.OK);
         }
         catch(Exception e){
+            e.printStackTrace();
             log.error("Exception encountered in AccountController::getCumulativeBalance():", e.getClass().getName(), e.getMessage());
             return new ResponseEntity<>(cumulativeAccountDetails, HttpStatus.INTERNAL_SERVER_ERROR);
         }
