@@ -12,10 +12,12 @@
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="mybank.account.transactions.demo" target="17" />
+      <module name="React-SpringBoot-Assignment-Latest-Create-DockerImage-Upload-DockerHub" target="1.5" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="React-SpringBoot-Assignment-Latest-Create-DockerImage-Upload-DockerHub" options="" />
       <module name="mybank.account.transactions.demo" options="-parameters" />
     </option>
   </component>

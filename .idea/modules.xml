@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/React-SpringBoot-Assignment.iml" filepath="$PROJECT_DIR$/.idea/React-SpringBoot-Assignment.iml" />
+      <module fileurl="file://$PROJECT_DIR$/React-SpringBoot-Assignment-Latest-Create-DockerImage-Upload-DockerHub.iml" filepath="$PROJECT_DIR$/React-SpringBoot-Assignment-Latest-Create-DockerImage-Upload-DockerHub.iml" />
       <module fileurl="file://$PROJECT_DIR$/SpringBoot-Backend/mybank.account.transactions/mybank.account.transactions.demo.iml" filepath="$PROJECT_DIR$/SpringBoot-Backend/mybank.account.transactions/mybank.account.transactions.demo.iml" />
     </modules>
   </component>
